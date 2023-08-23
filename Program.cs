@@ -12,6 +12,12 @@
     get => Data[address];
     set => Data[address] = value;
   }
+
+  public void WriteWord(ushort Value, uint Address, ref uint Cycles) {
+    Data[Address] = (byte)(Value & 0xFF);
+    Data[Address + 1] = (byte)(Value >> 8);
+    Cycles -= 2;
+  }
 }
 
 class CPU {
@@ -47,6 +53,25 @@ class CPU {
     return Data;
   }
 
+  public ushort FetchWord(ref uint Cycles, Mem memory) {
+    // 6502 is little endian
+    ushort Data = memory[PC];
+    PC++;
+
+    Data |= (ushort)(memory[PC] << 8);
+    PC++;
+
+    Cycles -= 2;
+
+    /*// If you wanted to handle endianness
+    // You would need to swap bytes here
+    if ( PLATFORM_BIG_ENDIAN)
+      SwapBytesInWord(Data);
+    */
+
+    return Data;
+  }
+
   public byte ReadByte(ref uint Cycles, byte Address, Mem memory) {
     byte Data = memory[Address];
     Cycles--;
@@ -56,6 +81,8 @@ class CPU {
   // opcodes
   public const byte INS_LDA_IM = 0xA9;
   public const byte INS_LDA_ZP = 0xA5;
+  public const byte INS_LDA_ZPX = 0xB5;
+  public const byte INS_JSR = 0x20;
 
   public void LDASetStatus() {
     Z = A == 0;
@@ -66,19 +93,38 @@ class CPU {
     while (Cycles > 0) {
       byte Ins = FetchByte(ref Cycles, memory);
       switch (Ins) {
-        case INS_LDA_IM:
+        case INS_LDA_IM: {
           byte Value = FetchByte(ref Cycles, memory);
           A = Value;
           LDASetStatus();
           break;
-        case INS_LDA_ZP:
+        }
+        case INS_LDA_ZP: {
           byte ZeroPageAddr = FetchByte(ref Cycles, memory);
           A = ReadByte(ref Cycles, ZeroPageAddr, memory);
           LDASetStatus();
           break;
-        default:
+        }
+        case INS_LDA_ZPX: {
+          byte ZeroPageAddr = FetchByte(ref Cycles, memory);
+          ZeroPageAddr += X;
+          Cycles--;
+          A = ReadByte(ref Cycles, ZeroPageAddr, memory);
+          LDASetStatus();
+          break;
+        }
+        case INS_JSR: {
+          ushort SubAddr = FetchWord(ref Cycles, memory);
+          memory.WriteWord((ushort)(PC - 1), SubAddr, ref Cycles);
+          SP++;
+          PC = SubAddr;
+          Cycles--;
+          break;
+        }
+        default: {
           Console.WriteLine("Instruction not handled");
           break;
+        }
       }
     }
   }
@@ -103,5 +149,6 @@ class Program {
     Console.WriteLine($"A = 0x{cpu.A:X2}");
     Console.WriteLine($"X = 0x{cpu.X:X2}");
     Console.WriteLine($"Y = 0x{cpu.Y:X2}");
+    Console.ReadLine();
   }
 }
