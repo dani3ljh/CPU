@@ -68,7 +68,10 @@ class CPU {
     N = (A & 0b10000000) > 0;
   }
 
-  public void Execute(uint Cycles, Mem memory) {
+  /// <returns>The Cycles actually executed</returns>
+  public int Execute(uint Cycles, Mem memory) {
+    uint CyclesRequested = Cycles;
+
     while (Cycles > 0) {
       // Console.Write($"Reading from addr 0x{PC:X4}, ");
       byte Ins = FetchByte(ref Cycles, memory);
@@ -96,8 +99,8 @@ class CPU {
         }
         case INS_JSR: {
           ushort SubAddr = FetchWord(ref Cycles, memory);
-          memory.WriteWord((ushort)(PC - 1), (ushort)(SP - 2), ref Cycles);
-          SP -= 2;
+          memory.WriteWord((ushort)(PC - 1), (ushort)SP, ref Cycles);
+          SP += 2;
           PC = SubAddr;
           Cycles--;
           break;
@@ -108,6 +111,8 @@ class CPU {
         }
       }
     }
+
+    return (int)CyclesRequested - (int)Cycles;
   }
 
   public CPU() {}
