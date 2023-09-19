@@ -21,6 +21,14 @@ class Tests {
   public void RunAllTests() {
     List<string> testsFailed = new List<string>();
 
+    if (!TheCPUDoesNothingWhenWeExecuteZeroCycles())
+      testsFailed.Add("TheCPUDoesNothingWhenWeExecuteZeroCycles");
+    cpu.Reset(mem);
+
+    if (!CPUCanExecuateMoreCyclesThanRequestedIfRequiredByInstruction())
+      testsFailed.Add("CPUCanExecuateMoreCyclesThanRequestedIfRequiredByInstruction");
+    cpu.Reset(mem);
+
     if (!LDAImmediateCanLoadValueIntoTheARegister())
       testsFailed.Add("LDAImmediateCanLoadValueIntoTheARegister");
     cpu.Reset(mem);
@@ -48,9 +56,45 @@ class Tests {
     Console.ResetColor();
   }
 
+  public bool VerifyUnModifiedFlagsFromLDA(CPU cpu) {
+    return (
+        !cpu.C &&
+        !cpu.I &&
+        !cpu.D &&
+        !cpu.B &&
+        !cpu.V
+    );
+  }
+
+  public bool TheCPUDoesNothingWhenWeExecuteZeroCycles() {
+    // given:
+    const int NUM_CYCLES = 0;
+
+    // when:
+    int CyclesUsed = cpu.Execute(NUM_CYCLES, mem);
+
+    // then:
+    return (
+      CyclesUsed == 0
+    );
+  }
+
+  public bool CPUCanExecuateMoreCyclesThanRequestedIfRequiredByInstruction() {
+    // given:
+    mem[0xFFFC] = CPU.INS_LDA_IM;
+    mem[0xFFFD] = 0x84;
+
+    // when:
+    int CyclesUsed = cpu.Execute(1, mem);
+
+    // then:
+    return (
+      CyclesUsed == 2
+    );
+  }
+
   public bool LDAImmediateCanLoadValueIntoTheARegister() {
     // given:
-    // inline a little program
     mem[0xFFFC] = CPU.INS_LDA_IM;
     mem[0xFFFD] = 0x84;
 
@@ -63,17 +107,12 @@ class Tests {
       CyclesUsed == 2 &&
       !cpu.Z &&
       cpu.N &&
-      !cpu.C &&
-      !cpu.I &&
-      !cpu.D &&
-      !cpu.B &&
-      !cpu.V
+      VerifyUnModifiedFlagsFromLDA(cpu)
     );
   }
 
   public bool LDAZeroPageCanLoadValueIntoTheARegister() {
     // given:
-    // inline a little program
     mem[0xFFFC] = CPU.INS_LDA_ZP;
     mem[0xFFFD] = 0x42;
     mem[0x0042] = 0x37;
@@ -87,18 +126,13 @@ class Tests {
       CyclesUsed == 3 &&
 			!cpu.Z && 
 			!cpu.N &&
-      !cpu.C &&
-      !cpu.I &&
-      !cpu.D &&
-      !cpu.B &&
-      !cpu.V
+      VerifyUnModifiedFlagsFromLDA(cpu)
     );
   }
 
   public bool LDAZeroPageXCanLoadValueIntoTheARegister() {
     // given:
     cpu.X = 0x05;
-    // inline a little program
     mem[0xFFFC] = CPU.INS_LDA_ZPX;
     mem[0xFFFD] = 0x42;
     mem[0x0047] = 0x37;
@@ -112,18 +146,13 @@ class Tests {
       CyclesUsed == 4 &&
 		  !cpu.Z &&
 		  !cpu.N &&
-      !cpu.C &&
-      !cpu.I &&
-      !cpu.D &&
-      !cpu.B &&
-      !cpu.V
+      VerifyUnModifiedFlagsFromLDA(cpu)
     );
   }
 
   public bool LDAZeroPageXCanLoadValueIntoTheARegisterWhenItWraps() {
     // given:
     cpu.X = 0xFF;
-    // inline a little program
     mem[0xFFFC] = CPU.INS_LDA_ZPX;
     mem[0xFFFD] = 0x80;
     mem[0x007F] = 0x37;
@@ -137,11 +166,7 @@ class Tests {
       CyclesUsed == 4 &&
 			!cpu.Z && 
 			!cpu.N &&
-      !cpu.C &&
-      !cpu.I &&
-      !cpu.D &&
-      !cpu.B &&
-      !cpu.V
+      VerifyUnModifiedFlagsFromLDA(cpu)
     );
   }
 }

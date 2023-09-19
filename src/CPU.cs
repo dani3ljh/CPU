@@ -25,14 +25,14 @@ class CPU {
     memory.Initialize();
   }
 
-  public byte FetchByte(ref uint Cycles, Mem memory) {
+  public byte FetchByte(ref int Cycles, Mem memory) {
     byte Data = memory[PC];
     PC++;
     Cycles--;
     return Data;
   }
 
-  public ushort FetchWord(ref uint Cycles, Mem memory) {
+  public ushort FetchWord(ref int Cycles, Mem memory) {
     // 6502 is little endian
     ushort Data = memory[PC];
     PC++;
@@ -51,7 +51,7 @@ class CPU {
     return Data;
   }
 
-  public byte ReadByte(ref uint Cycles, byte Address, Mem memory) {
+  public byte ReadByte(ref int Cycles, byte Address, Mem memory) {
     byte Data = memory[Address];
     Cycles--;
     return Data;
@@ -69,8 +69,8 @@ class CPU {
   }
 
   /// <returns>The Cycles actually executed</returns>
-  public int Execute(uint Cycles, Mem memory) {
-    uint CyclesRequested = Cycles;
+  public int Execute(int Cycles, Mem memory) {
+    int CyclesRequested = Cycles;
 
     while (Cycles > 0) {
       // Console.Write($"Reading from addr 0x{PC:X4}, ");
@@ -112,7 +112,7 @@ class CPU {
       }
     }
 
-    return (int)CyclesRequested - (int)Cycles;
+    return CyclesRequested - Cycles;
   }
 
   public CPU() {}

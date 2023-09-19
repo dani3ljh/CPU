@@ -14,7 +14,7 @@ class Mem {
     set => Data[address] = value;
   }
 
-  public void WriteWord(ushort Value, uint Address, ref uint Cycles) {
+  public void WriteWord(ushort Value, uint Address, ref int Cycles) {
     Data[Address] = (byte)(Value & 0xFF);
     Data[Address + 1] = (byte)(Value >> 8);
     Cycles -= 2;
